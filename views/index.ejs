@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mise à jour de demande</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 60px auto;
+      padding: 0 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      font-size: 1.4rem;
+      color: #333;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #0070d2;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover { background: #005fb2; }
+    .alert-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .alert-error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mise à jour d'une demande</h1>
+  <div class="card">
+    <% if (result) { %>
+      <div class="alert-success">
+        La demande <strong><%= result.externalId %></strong> a été mise à jour avec le statut <strong><%= result.status %></strong>.
+      </div>
+    <% } %>
+    <% if (error) { %>
+      <div class="alert-error">
+        Erreur : <%= error %>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/update-case">
+      <label for="externalId">Numéro de la demande</label>
+      <input
+        type="text"
+        id="externalId"
+        name="externalId"
+        placeholder="Identifiant externe de la demande"
+        required
+        value="<%= result ? result.externalId : '' %>"
+      >
+
+      <label for="status">Statut</label>
+      <select id="status" name="status" required>
+        <option value="">-- Sélectionner un statut --</option>
+        <% statusValues.forEach(function(val) { %>
+          <option value="<%= val %>" <%= result && result.status === val ? 'selected' : '' %>><%= val %></option>
+        <% }); %>
+      </select>
+
+      <button type="submit">Mettre à jour</button>
+    </form>
+  </div>
+</body>
+</html>
