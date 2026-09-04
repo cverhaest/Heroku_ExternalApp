@@ -51,10 +51,12 @@ async function getCaseStatusPicklistValues(token) {
 }
 
 app.get('/', async (req, res) => {
+  const { externalId, status, error } = req.query;
   try {
     const token = await getSalesforceToken();
     const statusValues = await getCaseStatusPicklistValues(token);
-    res.render('index', { statusValues, result: null, error: null });
+    const result = externalId && status ? { externalId, status } : null;
+    res.render('index', { statusValues, result, error: error || null });
   } catch (err) {
     res.render('index', { statusValues: [], result: null, error: err.message });
   }
@@ -65,7 +67,6 @@ app.post('/update-case', async (req, res) => {
 
   try {
     const token = await getSalesforceToken();
-    const statusValues = await getCaseStatusPicklistValues(token);
 
     const response = await fetch(
       `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/sobjects/Case/${SF_EXTERNAL_ID_FIELD}/${encodeURIComponent(externalId)}`,
@@ -80,18 +81,14 @@ app.post('/update-case', async (req, res) => {
     );
 
     if (response.status === 204 || response.status === 200) {
-      res.render('index', {
-        statusValues,
-        result: { externalId, status },
-        error: null,
-      });
+      res.redirect(`/?externalId=${encodeURIComponent(externalId)}&status=${encodeURIComponent(status)}`);
     } else {
       const errorBody = await response.json();
       const message = errorBody[0]?.message || `Erreur HTTP ${response.status}`;
-      res.render('index', { statusValues, result: null, error: message });
+      res.redirect(`/?error=${encodeURIComponent(message)}`);
     }
   } catch (err) {
-    res.render('index', { statusValues: [], result: null, error: err.message });
+    res.redirect(`/?error=${encodeURIComponent(err.message)}`);
   }
 });
 
