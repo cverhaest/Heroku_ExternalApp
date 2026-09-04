@@ -62,6 +62,16 @@ app.get('/', async (_req, res) => {
   }
 });
 
+app.get('/kheops', async (_req, res) => {
+  try {
+    const token = await getSalesforceToken();
+    const statusValues = await getCaseStatusPicklistValues(token);
+    res.render('kheops', { statusValues });
+  } catch (err) {
+    res.render('kheops', { statusValues: [] });
+  }
+});
+
 app.post('/update-case', async (req, res) => {
   const { externalId, status } = req.body;
 
