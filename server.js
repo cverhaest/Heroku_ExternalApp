@@ -14,6 +14,7 @@ const SF_API_VERSION = process.env.SF_API_VERSION || 'v62.0';
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 async function getSalesforceToken() {
@@ -51,15 +52,13 @@ async function getCaseStatusPicklistValues(token) {
   return statusField ? statusField.picklistValues.filter(v => v.active).map(v => v.value) : [];
 }
 
-app.get('/', async (req, res) => {
-  const { externalId, status, error } = req.query;
+app.get('/', async (_req, res) => {
   try {
     const token = await getSalesforceToken();
     const statusValues = await getCaseStatusPicklistValues(token);
-    const result = externalId && status ? { externalId, status } : null;
-    res.render('index', { statusValues, result, error: error || null });
+    res.render('index', { statusValues });
   } catch (err) {
-    res.render('index', { statusValues: [], result: null, error: err.message });
+    res.render('index', { statusValues: [] });
   }
 });
 
@@ -82,14 +81,14 @@ app.post('/update-case', async (req, res) => {
     );
 
     if (response.status === 204 || response.status === 200) {
-      res.redirect(`/?externalId=${encodeURIComponent(externalId)}&status=${encodeURIComponent(status)}`);
+      res.json({ success: true });
     } else {
       const errorBody = await response.json();
       const message = errorBody[0]?.message || `Erreur HTTP ${response.status}`;
-      res.redirect(`/?error=${encodeURIComponent(message)}`);
+      res.json({ success: false, error: message });
     }
   } catch (err) {
-    res.redirect(`/?error=${encodeURIComponent(err.message)}`);
+    res.json({ success: false, error: err.message });
   }
 });
 
