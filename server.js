@@ -11,6 +11,7 @@ const SF_CLIENT_ID = process.env.SF_CLIENT_ID;
 const SF_CLIENT_SECRET = process.env.SF_CLIENT_SECRET;
 const SF_EXTERNAL_ID_FIELD = process.env.SF_EXTERNAL_ID_FIELD || 'Kheops_External_ID__c';
 const SF_API_VERSION = process.env.SF_API_VERSION || 'v62.0';
+const SF_RECORD_TYPE_DEVELOPER_NAME = process.env.SF_RECORD_TYPE_DEVELOPER_NAME || '';
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
@@ -41,13 +42,35 @@ async function getSalesforceToken() {
 }
 
 async function getCaseStatusPicklistValues(token) {
+  if (SF_RECORD_TYPE_DEVELOPER_NAME) {
+    // Récupère l'ID du Record Type via SOQL
+    const soql = encodeURIComponent(`SELECT Id FROM RecordType WHERE SObjectType = 'Case' AND DeveloperName = '${SF_RECORD_TYPE_DEVELOPER_NAME}' LIMIT 1`);
+    const rtResponse = await fetch(
+      `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/query?q=${soql}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!rtResponse.ok) throw new Error('Impossible de récupérer le Record Type');
+    const rtData = await rtResponse.json();
+    if (!rtData.records || rtData.records.length === 0) throw new Error(`Record Type "${SF_RECORD_TYPE_DEVELOPER_NAME}" introuvable`);
+    const recordTypeId = rtData.records[0].Id;
+
+    // Valeurs de picklist filtrées par Record Type via UI API
+    const plResponse = await fetch(
+      `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/ui-api/object-info/Case/picklist-values/${recordTypeId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!plResponse.ok) throw new Error('Impossible de récupérer les valeurs de picklist par Record Type');
+    const plData = await plResponse.json();
+    const statusValues = plData.picklistFieldValues?.Status?.values || [];
+    return statusValues.map(v => v.value);
+  }
+
+  // Fallback : toutes les valeurs actives du champ
   const response = await fetch(
     `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/sobjects/Case/describe`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
-
   if (!response.ok) throw new Error('Impossible de récupérer les métadonnées Case');
-
   const describe = await response.json();
   const statusField = describe.fields.find(f => f.name === 'Status');
   return statusField ? statusField.picklistValues.filter(v => v.active).map(v => v.value) : [];
