@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Diagramme de séquence — Kheops Demo App</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 30px; }
+    h1 { font-size: 1.2rem; color: #333; margin-bottom: 20px; }
+    .diagram-box {
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Diagramme de séquence — Application Kheops Demo</h1>
+  <div class="diagram-box">
+    <div class="mermaid">
+sequenceDiagram
+    actor User as Utilisateur
+    participant Browser as Navigateur
+    participant Server as Serveur Node.js<br/>(Heroku)
+    participant Cache as Cache mémoire<br/>(token)
+    participant SF as Salesforce
+
+    rect rgb(235, 245, 255)
+        Note over User,SF: Chargement de la page /kheops
+
+        User->>Browser: Ouvre l'application
+        Browser->>Server: GET /kheops
+
+        Server->>Cache: Token valide ?
+        Cache-->>Server: Non (cache vide)
+        Server->>SF: POST /oauth2/token (client_credentials)
+        SF-->>Server: access_token + expires_in
+        Server->>Cache: Stocke token (TTL = expires_in - 60s)
+
+        Server->>SF: GET /query — SELECT Id FROM RecordType<br/>WHERE DeveloperName = 'General_Inquiry'
+        SF-->>Server: recordTypeId
+
+        Server->>SF: GET /ui-api/object-info/Case/<br/>picklist-values/{recordTypeId}
+        SF-->>Server: Valeurs Status filtrées
+
+        Server-->>Browser: Page HTML rendue (picklist injectée)
+        Browser-->>User: Affichage de la page Kheops
+    end
+
+    rect rgb(245, 235, 255)
+        Note over User,SF: Initialisation — récupération du statut actuel
+
+        Browser->>Server: GET /case-status?externalId=CALL83729178<br/>(déclenché au DOMContentLoaded)
+
+        Server->>Cache: Token valide ?
+        Cache-->>Server: Oui → access_token (réutilisé)
+
+        Server->>SF: GET /query — SELECT Status FROM Case<br/>WHERE Kheops_External_ID__c = 'CALL83729178'
+        SF-->>Server: Status actuel du Case
+
+        Server-->>Browser: { status: "En cours" }
+        Browser-->>User: Picklist pré-sélectionnée sur le statut Salesforce
+    end
+
+    rect rgb(255, 245, 235)
+        Note over User,SF: Modification du statut
+
+        User->>Browser: Modifie l'ID Interaction,<br/>quitte le champ (blur)
+        Browser->>Server: GET /case-status?externalId={nouvelId}
+
+        Server->>Cache: Token valide ?
+        Cache-->>Server: Oui → access_token (réutilisé)
+
+        Server->>SF: GET /query — SELECT Status FROM Case<br/>WHERE Kheops_External_ID__c = '{nouvelId}'
+        SF-->>Server: Status actuel du Case
+
+        Server-->>Browser: { status: "..." }
+        Browser-->>User: Picklist mise à jour
+
+        User->>Browser: Choisit un nouveau statut,<br/>clique "Enregistrer"
+        Browser->>Server: POST /update-case (AJAX)<br/>{ externalId, status }
+
+        Server->>Cache: Token valide ?
+        Cache-->>Server: Oui → access_token (réutilisé)
+
+        Server->>SF: PATCH /sobjects/Case/<br/>Kheops_External_ID__c/{externalId}<br/>Body: { Status: "..." }
+        SF-->>Server: 204 No Content
+
+        Server-->>Browser: { success: true }
+        Browser-->>User: Message de confirmation
+    end
+
+    rect rgb(235, 255, 235)
+        Note over User,SF: Token expiré (renouvellement automatique)
+
+        Server->>Cache: Token valide ?
+        Cache-->>Server: Non (expiré)
+        Server->>SF: POST /oauth2/token (client_credentials)
+        SF-->>Server: nouveau access_token + expires_in
+        Server->>Cache: Met à jour le cache
+    end
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'default', sequence: { actorMargin: 80 } });
+  </script>
+</body>
+</html>
