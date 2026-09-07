@@ -447,6 +447,29 @@
   </div>
 
   <script>
+    async function fetchCurrentStatus(externalId) {
+      if (!externalId) return;
+      try {
+        const res = await fetch(`/case-status?externalId=${encodeURIComponent(externalId)}`);
+        const data = await res.json();
+        if (data.status) {
+          const select = document.getElementById('status');
+          const option = Array.from(select.options).find(o => o.value === data.status);
+          if (option) select.value = data.status;
+        }
+      } catch (_) {}
+    }
+
+    document.getElementById('externalId').addEventListener('blur', function () {
+      fetchCurrentStatus(this.value.trim());
+    });
+
+    // Chargement initial : récupère le statut pour l'ID affiché par défaut
+    document.addEventListener('DOMContentLoaded', function () {
+      const initialId = document.getElementById('externalId').value.trim();
+      fetchCurrentStatus(initialId);
+    });
+
     async function saveInteraction() {
       const externalId = document.getElementById('externalId').value.trim();
       const status = document.getElementById('status').value;

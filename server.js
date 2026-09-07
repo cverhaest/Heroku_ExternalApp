@@ -107,6 +107,26 @@ app.get('/kheops', async (_req, res) => {
   }
 });
 
+app.get('/case-status', async (req, res) => {
+  const { externalId } = req.query;
+  if (!externalId) return res.json({ status: null });
+
+  try {
+    const token = await getSalesforceToken();
+    const soql = encodeURIComponent(`SELECT Status FROM Case WHERE ${SF_EXTERNAL_ID_FIELD} = '${externalId.replace(/'/g, "\\'")}' LIMIT 1`);
+    const response = await fetch(
+      `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/query?q=${soql}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!response.ok) throw new Error('Erreur requête Salesforce');
+    const data = await response.json();
+    const status = data.records?.[0]?.Status ?? null;
+    res.json({ status });
+  } catch (err) {
+    res.json({ status: null, error: err.message });
+  }
+});
+
 app.post('/update-case', async (req, res) => {
   const { externalId, status } = req.body;
 
