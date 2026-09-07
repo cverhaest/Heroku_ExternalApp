@@ -19,7 +19,13 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+let _tokenCache = { token: null, expiresAt: 0 };
+
 async function getSalesforceToken() {
+  if (_tokenCache.token && Date.now() < _tokenCache.expiresAt) {
+    return _tokenCache.token;
+  }
+
   const params = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: SF_CLIENT_ID,
@@ -38,7 +44,12 @@ async function getSalesforceToken() {
   }
 
   const data = await response.json();
-  return data.access_token;
+  // expires_in est en secondes, on anticipe de 60s pour éviter les expirations en cours d'appel
+  _tokenCache = {
+    token: data.access_token,
+    expiresAt: Date.now() + (data.expires_in - 60) * 1000,
+  };
+  return _tokenCache.token;
 }
 
 async function getCaseStatusPicklistValues(token) {
