@@ -14,6 +14,7 @@ const SF_API_VERSION = process.env.SF_API_VERSION || 'v62.0';
 
 app.set('view engine', 'ejs');
 app.set('views', './views');
+app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

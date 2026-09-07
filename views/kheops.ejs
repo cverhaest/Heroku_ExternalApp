@@ -49,7 +49,7 @@
     #header-fields {
       background: #fff;
       border-bottom: 1px solid #c0c0c0;
-      padding: 4px 6px 4px 40px;
+      padding: 4px 6px 4px 64px;
       display: grid;
       grid-template-columns: auto 180px 1fr auto 180px 1fr auto 180px;
       column-gap: 6px;
@@ -86,27 +86,31 @@
 
     /* Sidebar */
     #sidebar {
-      width: 34px;
-      background: #1e4d8c;
+      width: 58px;
+      background: #fff;
+      border-right: 1px solid #c0c0c0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding-top: 3px;
-      gap: 2px;
+      padding-top: 4px;
+      gap: 0;
       flex-shrink: 0;
     }
     .sidebar-icon {
-      width: 26px; height: 26px;
-      background: linear-gradient(135deg, #3a6dbc, #1e4d8c);
-      border: 1px solid #4a7dcc;
-      border-bottom-color: #0e3d7c;
-      border-right-color: #0e3d7c;
-      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 52px;
+      background-image: url('/images/sidebar-icons.png');
+      background-size: 48px auto;
+      background-repeat: no-repeat;
       cursor: pointer;
     }
-    .sidebar-icon:hover { background: linear-gradient(135deg, #5a8de0, #2e5dac); }
-    .sidebar-icon.active { background: linear-gradient(135deg, #6aa0f0, #3a70d0); border-color: #7ab0ff; }
-    .sidebar-icon svg { width: 14px; height: 14px; }
+    .sidebar-icon:nth-child(1) { background-position: 0 0; }
+    .sidebar-icon:nth-child(2) { background-position: 0 -52px; }
+    .sidebar-icon:nth-child(3) { background-position: 0 -104px; }
+    .sidebar-icon:nth-child(4) { background-position: 0 -156px; }
+    .sidebar-icon:nth-child(5) { background-position: 0 -208px; }
+    .sidebar-icon:nth-child(6) { background-position: 0 -260px; }
+    .sidebar-icon:nth-child(7) { background-position: 0 -312px; }
+    .sidebar-icon.active { background-color: rgba(0, 80, 180, 0.18); }
 
     /* Content */
     #content { flex: 1; overflow-y: auto; background: #fff; }
@@ -265,24 +269,13 @@
 
   <div id="main">
     <div id="sidebar">
-      <div class="sidebar-icon active">
-        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.2"><rect x="1" y="1" width="12" height="12"/><line x1="3" y1="4" x2="11" y2="4"/><line x1="3" y1="7" x2="11" y2="7"/><line x1="3" y1="10" x2="8" y2="10"/></svg>
-      </div>
-      <div class="sidebar-icon">
-        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.2"><circle cx="7" cy="5" r="2.5"/><path d="M1.5 13c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>
-      </div>
-      <div class="sidebar-icon">
-        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.2"><path d="M2 1h10v12H2z"/><line x1="4" y1="4" x2="10" y2="4"/><line x1="4" y1="6.5" x2="10" y2="6.5"/><line x1="4" y1="9" x2="7" y2="9"/></svg>
-      </div>
-      <div class="sidebar-icon">
-        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.2"><rect x="1" y="3" width="12" height="9" rx="1"/><line x1="4" y1="3" x2="4" y2="2"/><line x1="7" y1="3" x2="7" y2="2"/><line x1="10" y1="3" x2="10" y2="2"/></svg>
-      </div>
-      <div class="sidebar-icon">
-        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.2"><polyline points="1,10 4,7 6.5,9.5 10,4 13,6"/></svg>
-      </div>
-      <div class="sidebar-icon">
-        <svg viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.2"><path d="M2 12l3-3 2 2 5-8"/></svg>
-      </div>
+      <div class="sidebar-icon" title="Utilisateurs"></div>
+      <div class="sidebar-icon" title="Saisie"></div>
+      <div class="sidebar-icon" title="Consultation"></div>
+      <div class="sidebar-icon active" title="Interaction"></div>
+      <div class="sidebar-icon" title="Liste"></div>
+      <div class="sidebar-icon" title="Documents"></div>
+      <div class="sidebar-icon" title="Archives"></div>
     </div>
 
     <div id="content">
