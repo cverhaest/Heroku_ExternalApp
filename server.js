@@ -10,6 +10,7 @@ const SF_INSTANCE_URL = process.env.SF_INSTANCE_URL;
 const SF_CLIENT_ID = process.env.SF_CLIENT_ID;
 const SF_CLIENT_SECRET = process.env.SF_CLIENT_SECRET;
 const SF_EXTERNAL_ID_FIELD = process.env.SF_EXTERNAL_ID_FIELD || 'Kheops_External_ID__c';
+const SF_SYNC_FIELD = process.env.SF_SYNC_FIELD || 'Status';
 const SF_API_VERSION = process.env.SF_API_VERSION || 'v62.0';
 const SF_RECORD_TYPE_DEVELOPER_NAME = process.env.SF_RECORD_TYPE_DEVELOPER_NAME || '';
 
@@ -72,7 +73,7 @@ async function getCaseStatusPicklistValues(token) {
     );
     if (!plResponse.ok) throw new Error('Impossible de récupérer les valeurs de picklist par Record Type');
     const plData = await plResponse.json();
-    const statusValues = plData.picklistFieldValues?.Status?.values || [];
+    const statusValues = plData.picklistFieldValues?.[SF_SYNC_FIELD]?.values || [];
     return statusValues.map(v => v.value);
   }
 
@@ -83,8 +84,8 @@ async function getCaseStatusPicklistValues(token) {
   );
   if (!response.ok) throw new Error('Impossible de récupérer les métadonnées Case');
   const describe = await response.json();
-  const statusField = describe.fields.find(f => f.name === 'Status');
-  return statusField ? statusField.picklistValues.filter(v => v.active).map(v => v.value) : [];
+  const syncField = describe.fields.find(f => f.name === SF_SYNC_FIELD);
+  return syncField ? syncField.picklistValues.filter(v => v.active).map(v => v.value) : [];
 }
 
 app.get('/', async (_req, res) => {
@@ -113,14 +114,14 @@ app.get('/case-status', async (req, res) => {
 
   try {
     const token = await getSalesforceToken();
-    const soql = encodeURIComponent(`SELECT Status FROM Case WHERE ${SF_EXTERNAL_ID_FIELD} = '${externalId.replace(/'/g, "\\'")}' LIMIT 1`);
+    const soql = encodeURIComponent(`SELECT ${SF_SYNC_FIELD} FROM Case WHERE ${SF_EXTERNAL_ID_FIELD} = '${externalId.replace(/'/g, "\\'")}' LIMIT 1`);
     const response = await fetch(
       `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/query?q=${soql}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!response.ok) throw new Error('Erreur requête Salesforce');
     const data = await response.json();
-    const status = data.records?.[0]?.Status ?? null;
+    const status = data.records?.[0]?.[SF_SYNC_FIELD] ?? null;
     res.json({ status });
   } catch (err) {
     res.json({ status: null, error: err.message });
@@ -141,7 +142,7 @@ app.post('/update-case', async (req, res) => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Status: status }),
+        body: JSON.stringify({ [SF_SYNC_FIELD]: status }),
       }
     );
 
