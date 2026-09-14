@@ -98,13 +98,27 @@ app.get('/', async (_req, res) => {
   }
 });
 
+async function getLatestExternalId(token) {
+  const soql = encodeURIComponent(`SELECT ${SF_EXTERNAL_ID_FIELD} FROM Case WHERE ${SF_EXTERNAL_ID_FIELD} != null AND ${SF_EXTERNAL_ID_FIELD} != '' ORDER BY CreatedDate DESC LIMIT 1`);
+  const response = await fetch(
+    `${SF_INSTANCE_URL}/services/data/${SF_API_VERSION}/query?q=${soql}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!response.ok) return '';
+  const data = await response.json();
+  return data.records?.[0]?.[SF_EXTERNAL_ID_FIELD] ?? '';
+}
+
 app.get('/kheops', async (_req, res) => {
   try {
     const token = await getSalesforceToken();
-    const statusValues = await getCaseStatusPicklistValues(token);
-    res.render('kheops', { statusValues });
+    const [statusValues, defaultExternalId] = await Promise.all([
+      getCaseStatusPicklistValues(token),
+      getLatestExternalId(token),
+    ]);
+    res.render('kheops', { statusValues, defaultExternalId });
   } catch (err) {
-    res.render('kheops', { statusValues: [] });
+    res.render('kheops', { statusValues: [], defaultExternalId: '' });
   }
 });
 
