@@ -23,26 +23,31 @@ sequenceDiagram
         Server->>SF: GET /query — SELECT Id FROM RecordType<br/>WHERE DeveloperName = 'General_Inquiry'
         SF-->>Server: recordTypeId
 
-        Server->>SF: GET /ui-api/object-info/Case/<br/>picklist-values/{recordTypeId}
-        SF-->>Server: Valeurs Status filtrées
+        par En parallèle
+            Server->>SF: GET /ui-api/object-info/Case/picklist-values/{recordTypeId}
+            SF-->>Server: Valeurs {SF_SYNC_FIELD} filtrées par Record Type
+        and
+            Server->>SF: GET /query — SELECT {SF_EXTERNAL_ID_FIELD} FROM Case<br/>WHERE {SF_EXTERNAL_ID_FIELD} != null AND {SF_EXTERNAL_ID_FIELD} != ''<br/>ORDER BY CreatedDate DESC LIMIT 1
+            SF-->>Server: Valeur de l'ID Interaction le plus récent
+        end
 
-        Server-->>Browser: Page HTML rendue (picklist injectée)
+        Server-->>Browser: Page HTML rendue<br/>(picklist + ID Interaction par défaut injectés côté serveur)
         Browser-->>User: Affichage de la page Kheops
     end
 
     rect rgb(245, 235, 255)
         Note over User,SF: Initialisation — récupération du statut actuel
 
-        Browser->>Server: GET /case-status?externalId=CALL83729178<br/>(déclenché au DOMContentLoaded)
+        Browser->>Server: GET /case-status?externalId={defaultExternalId}<br/>(déclenché au chargement du script)
 
         Server->>Cache: Token valide ?
         Cache-->>Server: Oui → access_token (réutilisé)
 
-        Server->>SF: GET /query — SELECT Status FROM Case<br/>WHERE Kheops_External_ID__c = 'CALL83729178'
-        SF-->>Server: Status actuel du Case
+        Server->>SF: GET /query — SELECT {SF_SYNC_FIELD} FROM Case<br/>WHERE {SF_EXTERNAL_ID_FIELD} = '{defaultExternalId}'
+        SF-->>Server: Valeur actuelle du champ {SF_SYNC_FIELD}
 
         Server-->>Browser: { status: "En cours" }
-        Browser-->>User: Picklist pré-sélectionnée sur le statut Salesforce
+        Browser-->>User: Picklist pré-sélectionnée sur la valeur Salesforce
     end
 
     rect rgb(255, 245, 235)
@@ -54,8 +59,8 @@ sequenceDiagram
         Server->>Cache: Token valide ?
         Cache-->>Server: Oui → access_token (réutilisé)
 
-        Server->>SF: GET /query — SELECT Status FROM Case<br/>WHERE Kheops_External_ID__c = '{nouvelId}'
-        SF-->>Server: Status actuel du Case
+        Server->>SF: GET /query — SELECT {SF_SYNC_FIELD} FROM Case<br/>WHERE {SF_EXTERNAL_ID_FIELD} = '{nouvelId}'
+        SF-->>Server: Valeur actuelle du champ {SF_SYNC_FIELD}
 
         Server-->>Browser: { status: "..." }
         Browser-->>User: Picklist mise à jour
@@ -66,7 +71,7 @@ sequenceDiagram
         Server->>Cache: Token valide ?
         Cache-->>Server: Oui → access_token (réutilisé)
 
-        Server->>SF: PATCH /sobjects/Case/<br/>Kheops_External_ID__c/{externalId}<br/>Body: { Status: "..." }
+        Server->>SF: PATCH /sobjects/Case/{SF_EXTERNAL_ID_FIELD}/{externalId}<br/>Body: { [SF_SYNC_FIELD]: "..." }
         SF-->>Server: 204 No Content
 
         Server-->>Browser: { success: true }
